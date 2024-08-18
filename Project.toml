@@ -1,6 +1,13 @@
 name = "property_calculations"
-[compat]
-julia = "1.10.4"
-DrWatson = "2.15.0"
+
 [deps]
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[compat]
+DrWatson = "2.15.0"
+julia = "1.10.4"
