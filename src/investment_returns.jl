@@ -2,8 +2,10 @@
 Parameters for calculating an investment return.
 """
 
+using Unitful
 struct InvestmentReturnParameters
     purchase_price::Number
+    cadastral_values_fraction::Number
     notary_fee::Number
     loan_initiation_fee::Number
     loan_tax_rate::Number
@@ -23,7 +25,7 @@ struct InvestmentReturnParameters
 end
 
 function total_initial_cost(p::InvestmentReturnParameters)
-    p.purchase_price*(1.0+closing_cost_rate) + p.notary_fee + p.loan_initiation_fee
+    p.purchase_price + p.purchase_price*p.cadastral_values_fraction*p.closing_cost_rate + p.notary_fee + p.loan_initiation_fee
 end
 
 function down_payment(p::InvestmentReturnParameters)
@@ -35,9 +37,9 @@ function loan_amount(p::InvestmentReturnParameters)
 end
 
 function monthly_payment(p::InvestmentReturnParameters)
-    r = p.interest_rate*1u"yr"/12 # use monthly interest rate for monthly payment
+    r = p.interest_rate*1.0u"yr"/12.0 # use monthly interest rate for monthly payment
     # Number of payments:
-    n = p.loan_term*12/1u"yr"
+    n = p.loan_term*12.0/1.0u"yr"
     return loan_amount(p)*r*(1+r)^n/((1+r)^n - 1)
 end
 
@@ -61,7 +63,7 @@ function return_on_capital(p::InvestmentReturnParameters)
 end
 
 function loan_balance_at_sale(p::InvestmentReturnParameters)
-    x = 1 + p.mortgage_insurance_rate*1u"yr"
+    x = 1 + p.interest_rate*1u"yr"
     n = ustrip(u"yr", p.loan_term)
     b = ustrip(u"yr", p.hold_duration)
     loan_balance = loan_amount(p)*(x^n - x^b)/(x^n -1)
@@ -77,20 +79,20 @@ function total_money_at_sale(p::InvestmentReturnParameters)
     # This doesn't model the fact that you'd put your profits in the S&P 500!
     # That's probably a major effect. . . 
     profit = (annual_revenue(p) - annual_costs(p))*p.hold_duration
-    x = 1 + p.mortgage_insurance_rate*1u"yr"
-    n = ustrip(u"yr", p.loan_term)
-    b = ustrip(u"yr", p.hold_duration)
-    loan_balance = loan_amount(p)*(x^n - x^b)/(x^n -1)
+    Δt = 1.0u"yr"/12
+    x = 1.0 + p.interest_rate*Δt
+    total_number_payments = p.loan_term/Δt
+    payments = p.hold_duration/Δt
+    loan_balance = loan_amount(p)*x^payments - monthly_payment(p)*(1-x^payments)/(1-x)
     return profit + sale_price(p) - loan_balance
 end
-
-
 
 import Base: show
 
 function show(io::IO, estimates::InvestmentReturnParameters)
     println(io, "Real Estate Return Assumptions:")
     println(io, "  Property Value         : ", estimates.purchase_price)
+    println(io, "  Cadastral Value        : ", estimates.purchase_price*estimates.cadastral_values_fraction)
     println(io, "  Notary fee             : ", estimates.notary_fee)
     println(io, "  Loan initiation fee    : ", estimates.loan_initiation_fee)
     println(io, "  Loan Tax rate          : ", estimates.loan_tax_rate)
