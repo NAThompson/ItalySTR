@@ -6,12 +6,14 @@ using Zygote
 using Dates: Month, Year, Week
 @quickactivate "property_calculations"
 
-# Here you may include files from the source directory
 include(srcdir("investment_returns.jl"))
+
+Zygote.@adjoint function Quantity(x::Number, u)
+    return Quantity(x, u), (∂y -> (∂y * Quantity(1.0, u), nothing))
+end
 
 @unit € "€" Euro 1.0 false
 
-# @unit month "month" Month 1/12u"yr" false
 
 if !isinteractive()
     if length(ARGS) != 1
@@ -68,8 +70,13 @@ if !isinteractive()
     )
     println(params)
 
-    # Doesn't work for now:
-    # See: https://github.com/PainterQubits/Unitful.jl/issues/737
-    # Zygote.gradient(params -> total_money_at_sale(params), params)
-
+    gradient = Zygote.gradient(params -> total_money_at_sale(params), params)
+    gradient = gradient[1]
+    println("Each additional € spent on the property yields $(gradient.purchase_price)€ at sale.")
+    println("A 1% increase in interest rate yields $(gradient.interest_rate*0.01/1u"yr") at sale.")
+    println("A 1% increase in closing costs yields $(gradient.closing_cost_rate*0.01) at sale.")
+    println("A 1% increase in occupancy rate yields $(gradient.occupancy_rate*0.01) at sale.")
+    println("A 1% increase in asset appreciate rate yields $(gradient.asset_appreciation_rate*0.01) at sale.")
+    println("A 1% increase in down payment fraction yields $(gradient.down_payment_fraction*0.01) at sale.")
+    println("Each additional 100€ in weekly revenue yields a $(gradient.weekly_occupied_revenue*100*€/1u"wk") at sale.")
 end
